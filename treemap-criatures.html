@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Treemap tipus de criatura</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+</head>
+<body>
+<main>
+  <nav class="crumbs"><a href="index.html">← Totes les visualitzacions</a></nav>
+  <p class="eyebrow">Treemap · Magic: The Gathering</p>
+  <h1>Cada color té les seves races</h1>
+  <p class="lede">Els deu tipus de criatura més freqüents de cada color (cartes d'un sol color i incolores). L'àrea és el nombre de cartes de criatura que tenen aquell tipus. Clica un color per fer-hi zoom.</p>
+
+  <div class="chart"><div id="plot" class="plot"></div></div>
+  <details id="table"></details>
+
+  <section class="notes">
+    <h2>Què es pot veure</h2>
+    <p>Human apareix a tots els colors, però el que defineix cada color són els tipus que l'acompanyen: Soldier, Cleric i Angel a White; Wizard i Merfolk a Blue; Zombie i Vampire a Black; Goblin i Dragon a Red; Elf, Druid i Beast a Green. A Colorless, Construct, Golem i Eldrazi.</p>
+    <h2>Dades</h2>
+    <p>Scryfall, <em>Oracle Cards</em>. Una carta amb diversos tipus (per exemple <em>Human Wizard</em>) compta a cada tipus, i per això la suma no coincideix amb el nombre de criatures.</p>
+  </section>
+</main>
+<script src="data/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  const { COLORS, T, baseLayout, config, textOn, dataTable } = VIZ;
+  const L = MTG.labels;
+  const order = ["W", "U", "B", "R", "G", "C"];
+  const TOP = 10;
+
+  const ids = ["root"], labels = ["Creatures"], parents = [""], values = [0], colors = [T.surface];
+  const rows = [];
+  order.forEach((c) => {
+    const subs = MTG.creatureSub[c].slice(0, TOP);
+    const tot = subs.reduce((s, [, n]) => s + n, 0);
+    ids.push(c); labels.push(L.color[c]); parents.push("root"); values.push(tot); colors.push(COLORS[c]);
+    values[0] += tot;
+    subs.forEach(([s, n]) => {
+      ids.push(`${c}/${s}`); labels.push(s); parents.push(c); values.push(n); colors.push(COLORS[c]);
+      rows.push([L.color[c], s, n]);
+    });
+  });
+
+  Plotly.newPlot("plot", [{
+    type: "treemap", ids, labels, parents, values,
+    branchvalues: "total",
+    marker: { colors, line: { color: T.surface, width: 2 } },
+    textfont: { color: colors.map((c) => (c === T.surface ? T.ink : textOn(c))) },
+    texttemplate: "<b>%{label}</b><br>%{value:,}",
+    hovertemplate: "<b>%{label}</b><br>%{value:,} criatures<br>%{percentParent:.1%} del top-10 del color<extra></extra>",
+    pathbar: { visible: true, textfont: { color: T.ink } },
+    tiling: { pad: 2 },
+  }], { ...baseLayout(), separators: ",.", uniformtext: { minsize: 9, mode: "hide" } }, config);
+
+  dataTable(document.getElementById("table"), ["Color", "Tipus de criatura", "Cartes"], rows);
+</script>
+</body>
+</html>

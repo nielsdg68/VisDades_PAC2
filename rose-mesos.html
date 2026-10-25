@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rose chart mesos</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+</head>
+<body>
+<main>
+  <nav class="crumbs"><a href="index.html">← Totes les visualitzacions</a></nav>
+  <p class="eyebrow">Rose chart (diagrama de Nightingale) · Magic: The Gathering</p>
+  <h1>En quins mesos surten les cartes de Magic</h1>
+  <p class="lede">Cada pètal és un mes de l'any, i els anells són els colors. Com en el diagrama original de Florence Nightingale, és l'<strong>àrea</strong> de cada segment, i no el radi, la que és proporcional al nombre de cartes. Passa el cursor per sobre per veure'n el valor.</p>
+
+  <div class="chart"><div id="plot" class="plot"></div></div>
+  <details id="table"></details>
+
+  <section class="notes">
+    <h2>Què es pot veure</h2>
+    <p>Les publicacions segueixen un calendari força regular, amb pics a la primavera, a l'estiu i a la tardor, i amb molt poca activitat al desembre (Dec). Els colors creixen i decreixen junts, perquè cada edició nova inclou tots els colors de manera equilibrada.</p>
+    <h2>Dades</h2>
+    <p>Scryfall, <em>Oracle Cards</em>, camp <code>released_at</code>. Atenció: és la data de la impressió de referència de Scryfall, que no sempre coincideix amb la primera aparició de la carta. Per obtenir la data real de la primera aparició caldria el bolcat <em>All Cards</em>.</p>
+  </section>
+</main>
+<script src="data/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  const { COLORS, T, baseLayout, config, dataTable, nf } = VIZ;
+  const L = MTG.labels;
+  const order = ["W", "U", "B", "R", "G", "M", "C"]; // de dins cap enfora
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const v = {}; // v[color][mes-1]
+  order.forEach((c) => (v[c] = Array(12).fill(0)));
+  MTG.monthColor.forEach(([m, c, n]) => (v[c][m - 1] += n));
+
+  // Apilament d'àrees: el radi exterior de cada anell és sqrt(suma acumulada).
+  const cum = Array(12).fill(0);
+  const traces = order.map((c) => {
+    for (let i = 0; i < 12; i++) cum[i] += v[c][i];
+    return {
+      type: "barpolar",
+      name: L.color[c],
+      theta: MONTHS,
+      r: cum.map(Math.sqrt),
+      customdata: v[c].map((n, i) => [n, cum[i]]),
+      marker: { color: COLORS[c], line: { color: T.surface, width: 1.5 } },
+      hovertemplate: `<b>%{theta} · ${L.color[c]}</b><br>%{customdata[0]:,} cartes<br>Total del mes: %{customdata[1]:,}<extra></extra>`,
+    };
+  });
+  // overlay: es dibuixa primer l'anell exterior perquè els interiors quedin a sobre
+  traces.reverse();
+
+  const maxV = Math.max(...cum);
+  const ticks = [250, 1000, 2000, 3000, 4000].filter((t) => t <= maxV);
+
+  Plotly.newPlot("plot", traces, {
+    ...baseLayout(),
+    separators: ",.",
+    margin: { t: 32, r: 16, b: 56, l: 16 },
+    legend: { traceorder: "reversed", orientation: "h", x: 0.5, xanchor: "center", y: -0.04, yanchor: "top", font: { color: T.ink2 } },
+    polar: {
+      bgcolor: T.surface,
+      barmode: "overlay",
+      bargap: 0.04,
+      angularaxis: { direction: "clockwise", rotation: 90, color: T.ink2, gridcolor: T.rule, linecolor: T.rule },
+      radialaxis: {
+        tickvals: ticks.map(Math.sqrt), ticktext: ticks.map(nf),
+        angle: 75, tickangle: 75, color: T.ink3, gridcolor: T.rule, linecolor: T.rule, tickfont: { size: 11 },
+      },
+    },
+  }, config);
+
+  dataTable(document.getElementById("table"), ["Mes", ...order.map((c) => L.color[c]), "Total"],
+    MONTHS.map((m, i) => [m, ...order.map((c) => v[c][i]), cum[i]]));
+</script>
+</body>
+</html>

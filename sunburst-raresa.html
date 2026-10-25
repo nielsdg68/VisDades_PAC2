@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunburst raresa i tipus</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+</head>
+<body>
+<main>
+  <nav class="crumbs"><a href="index.html">← Totes les visualitzacions</a></nav>
+  <p class="eyebrow">Sunburst · Magic: The Gathering</p>
+  <h1>Què hi ha darrere de cada raresa</h1>
+  <p class="lede">Del centre cap enfora: la raresa de la carta, el tipus principal i el primer subtipus. L'angle de cada sector és proporcional al nombre de cartes. Clica un sector per fer-hi zoom i el centre per tornar enrere.</p>
+
+  <div class="chart"><div id="plot" class="plot"></div></div>
+  <details id="table"></details>
+
+  <section class="notes">
+    <h2>Què es pot veure</h2>
+    <p>Common, Uncommon i Rare tenen una mida semblant (unes 9.500–10.000 cartes cadascuna), mentre que les Mythic són una cinquena part. La composició també canvia amb la raresa. Els Instant passen del 17% de les Common a només l'1,5% de les Mythic. Els Planeswalker no existeixen a les Common, però són el 12% de les Mythic. A les Mythic, dues de cada tres cartes són Creature.</p>
+    <h2>Dades</h2>
+    <p>Scryfall, <em>Oracle Cards</em>. La raresa és la de la impressió de referència que tria Scryfall per a cada carta. Per a cada tipus es mostren fins a sis subtipus (els que superen el 3%); la resta s'agrupa a «Other subtypes». Les cartes sense subtipus queden com un segment buit.</p>
+  </section>
+</main>
+<script src="data/data.js"></script>
+<script src="assets/common.js"></script>
+<script>
+  const { RARITY, T, baseLayout, config, textOn, withAlpha, dataTable } = VIZ;
+  const L = MTG.labels;
+  const rarOrder = ["common", "uncommon", "rare", "mythic"];
+  const MIN_SHARE = 0.03;
+  const MAX_SUBS = 6;
+  const NONE = "(sense subtipus)";
+
+  // Agrega: raresa -> tipus -> subtipus (els subtipus petits van a «Altres»).
+  const tree = {};
+  MTG.rarityTypeSub.forEach(([r, t, s, n]) => {
+    ((tree[r] ||= {})[t] ||= {})[s] = (tree[r][t][s] || 0) + n;
+  });
+
+  const ids = [], labels = [], parents = [], values = [], colors = [], texts = [];
+  const rows = [];
+  rarOrder.forEach((r) => {
+    const types = tree[r];
+    const rTot = Object.values(types).reduce((s, o) => s + Object.values(o).reduce((a, b) => a + b, 0), 0);
+    ids.push(r); labels.push(L.rarity[r]); parents.push(""); values.push(rTot); colors.push(RARITY[r]); texts.push("<b>%{label}</b>");
+    Object.entries(types).forEach(([t, subs]) => {
+      const tTot = Object.values(subs).reduce((a, b) => a + b, 0);
+      const tid = `${r}/${t}`;
+      ids.push(tid); labels.push(L.type[t]); parents.push(r); values.push(tTot); colors.push(withAlpha(RARITY[r], 0.75)); texts.push("%{label}");
+      rows.push([L.rarity[r], L.type[t], tTot]);
+      let other = 0, kept = 0;
+      Object.entries(subs).sort((a, b) => b[1] - a[1]).forEach(([s, n]) => {
+        if (s === NONE) {
+          // sense subtipus: segment buit i silenciós, perquè l'anell no s'ompli de soroll
+          ids.push(`${tid}/_none`); labels.push("No subtype"); parents.push(tid); values.push(n);
+          colors.push(withAlpha(RARITY[r], 0.12)); texts.push(""); return;
+        }
+        if (n / tTot < MIN_SHARE || kept >= MAX_SUBS) { other += n; return; }
+        kept++;
+        ids.push(`${tid}/${s}`); labels.push(s); parents.push(tid); values.push(n);
+        colors.push(withAlpha(RARITY[r], 0.5)); texts.push("%{label}");
+      });
+      if (other) {
+        ids.push(`${tid}/_altres`); labels.push("Other subtypes"); parents.push(tid); values.push(other);
+        colors.push(withAlpha(RARITY[r], 0.3)); texts.push("%{label}");
+      }
+    });
+  });
+
+  Plotly.newPlot("plot", [{
+    type: "sunburst", ids, labels, parents, values,
+    branchvalues: "total",
+    sort: true,
+    marker: { colors, line: { color: T.surface, width: 1.5 } },
+    insidetextorientation: "radial",
+    texttemplate: texts,
+    textfont: { color: colors.map((c) => (c.startsWith("#") ? textOn(c) : T.ink)) },
+    hovertemplate: "<b>%{label}</b><br>%{value:,} cartes<br>%{percentParent:.1%} del nivell superior<br>%{percentRoot:.1%} del total<extra></extra>",
+    maxdepth: 3,
+  }], { ...baseLayout(), separators: ",.", uniformtext: { minsize: 10, mode: "hide" } }, config);
+
+  dataTable(document.getElementById("table"), ["Raresa", "Tipus", "Cartes"], rows.sort((a, b) => b[2] - a[2]));
+</script>
+</body>
+</html>

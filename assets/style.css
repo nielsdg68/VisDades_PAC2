@@ -1,0 +1,67 @@
+:root {
+  --surface: #fbfaf7;
+  --card: #ffffff;
+  --ink: #1d1c1a;
+  --ink-2: #55524c;
+  --ink-3: #8a867e;
+  --rule: #e4e1da;
+  --accent: #1f6fb2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #1a1a19;
+    --card: #232321;
+    --ink: #f1efe9;
+    --ink-2: #b9b5ac;
+    --ink-3: #85817a;
+    --rule: #3a3936;
+    --accent: #6aa8e0;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #1a1a19;
+  --card: #232321;
+  --ink: #f1efe9;
+  --ink-2: #b9b5ac;
+  --ink-3: #85817a;
+  --rule: #3a3936;
+  --accent: #6aa8e0;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: 16px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+a { color: var(--accent); }
+nav.crumbs { font-size: 14px; margin-bottom: 16px; }
+.eyebrow { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+h1 { font-size: 28px; line-height: 1.2; margin: 4px 0 8px; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 70ch; margin: 0 0 24px; }
+.chart { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 8px; }
+.chart > div.plot { width: 100%; height: 640px; }
+.notes { color: var(--ink-2); font-size: 14px; max-width: 75ch; margin-top: 16px; }
+.notes h2 { font-size: 15px; color: var(--ink); margin: 20px 0 4px; }
+details { margin-top: 16px; font-size: 14px; }
+summary { cursor: pointer; color: var(--accent); }
+table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--rule); }
+th { color: var(--ink-2); font-weight: 600; }
+td.num { text-align: right; }
+.table-wrap { max-height: 360px; overflow: auto; }
+
+/* Índex */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.cards a { display: block; background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 16px; text-decoration: none; color: var(--ink); }
+.cards a:hover { border-color: var(--accent); }
+.cards .tag { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+.cards h3 { margin: 4px 0; font-size: 18px; }
+.cards p { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+@media (max-width: 600px) {
+  h1 { font-size: 22px; }
+  .chart > div.plot { height: 480px; }
+}
